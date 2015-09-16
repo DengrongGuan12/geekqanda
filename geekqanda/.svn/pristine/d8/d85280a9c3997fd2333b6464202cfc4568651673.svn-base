@@ -1,0 +1,259 @@
+<?php
+/**
+ * Created by IntelliJ IDEA.
+ * User: gdr
+ * Date: 2014/10/2
+ * Time: 13:27
+ */
+class Pages extends CI_Controller{
+//    var $base;
+//    var $css;
+//    var $js;
+//    var $images;
+//    var $heads;
+    function __construct(){
+        parent::__construct();
+        $this->load->helper('url');
+        $this->load->helper('form');
+        $this->load->library('session');
+//        $this->base=$this->config->item('base_url');
+//        $this->css=$this->config->item('css');
+//        $this->js=$this->config->item('js');
+//        $this->images=$this->config->item('images');
+//        $this->heads=$this->config->item('heads');
+
+    }
+    public function views($page='home'){
+        $status=$this->session->userdata('status');
+        $name=$this->session->userdata('name');
+        if ( ! file_exists(APPPATH.'/views/'.$page.'.php'))
+        {
+            // 页面不存在
+            show_404();
+        }
+        $data['status']=$status;
+        $data['name']=$name;
+//        $data['base']=$this->base;
+//        $data['css']=$this->css;
+//        $data['js']=$this->js;
+//        $data['images']=$this->images;
+//        $data['heads']=$this->heads;
+        $this->load->view('templates/header', $data);
+        $this->load->view($page, $data);
+        $this->load->view('templates/footer', $data);
+    }
+    public function loginpage($success=1){
+
+//        $data['base']=$this->base;
+//        $data['css']=$this->css;
+//        $data['js']=$this->js;
+        $data['success']=$success;
+        $this->load->view('login',$data);
+
+    }
+    public function signpage($success=1){
+//        $data['base']=$this->base;
+//        $data['css']=$this->css;
+//        $data['js']=$this->js;
+        $data['success']=$success;
+        $this->load->view('sign',$data);
+    }
+    public function login(){
+        $name=$_POST['name'];
+        $password=$_POST['password'];
+        $this->load->model('user_model');
+        $real_password=$this->user_model->getPasswordByName($name);
+        if($real_password===$password){
+            $newdata=array(
+                'status'=>'OK',
+                'name'=>$name
+            );
+            $this->session->set_userdata($newdata);
+            redirect('pages/views');
+        }else{
+            redirect('pages/loginpage/0');
+        }
+    }
+    public function sign(){
+        $name=$_POST['name'];
+        $password=$_POST['password'];
+        $date=date('Y-m-d H:i:s',time());
+        $this->load->model('user_model');
+        if($this->user_model->insert_user($name,$password,$date)==0){
+            redirect("pages/signpage/0");
+        }else{
+            $newdata=array(
+                'status'=>'OK',
+                'name'=>$name
+            );
+            $this->session->set_userdata($newdata);
+            redirect('pages/views');
+
+        }
+
+    }
+    public function logout(){
+        $this->session->sess_destroy();
+        redirect('question/no_end_questions');
+    }
+    public function do_upload(){
+        $config['upload_path'] = 'public/head';
+        $config['allowed_types'] = 'gif|jpg|png|jpeg';
+        $config['file_name']=$this->session->userdata('name').'.gif';
+        $config['overwrite']=true;
+        $config['max_size'] = '2000';
+        $config['max_width']  = '0';
+        $config['max_height']  = '0';
+
+        $this->load->library('upload', $config);
+
+        if ( ! $this->upload->do_upload())
+        {
+
+            $error = "<font color='#dc143c'>尚未选择文件或者文件大小不符合要求！</font>";
+            echo($error);
+
+//            $this->myinfo($error);
+        }
+        else
+        {
+            $success="<font color='blue'>上传成功！</font>";
+            echo($success);
+//            $this->myinfo($success);
+        }
+    }
+    public function changePassword(){
+        $new_password=$_POST['password'];
+        $name=$this->session->userdata('name');
+        $this->load->model('user_model');
+        $this->user_model->setPasswordByname($name,$new_password);
+        echo "<font color='aqua'>修改成功！</font>";
+
+    }
+    public function myinfo(){
+        $status=$this->session->userdata('status');
+        $name=$this->session->userdata('name');
+        if ( ! file_exists(APPPATH.'/views/myinfo.php'))
+        {
+            // 页面不存在
+            show_404();
+        }
+        $data['status']=$status;
+        $data['name']=$name;
+//        $data['base']=$this->base;
+//        $data['css']=$this->css;
+//        $data['js']=$this->js;
+//        $data['images']=$this->images;
+//        $data['heads']=$this->heads;
+        $this->load->model('user_model');
+        $data['credit']=$this->user_model->getCreditByName($name);
+
+        $this->load->model('qanda_model');
+//        $ids=array();
+        $titles=array();
+        $contents=array();
+        $ids=$this->qanda_model->getQidByName($name);
+        foreach($ids as $id){
+            $titles[$id]=$this->qanda_model->getTitleById($id);
+            $contents[$id]=$this->qanda_model->getContentById($id);
+//            array_push($titles,$this->qanda_model->getTitleById($id));
+//            array_push($contents,$this->qanda_model->getQContentById($id));
+
+        }
+        $data['ids']=$ids;
+        $data['titles']=$titles;
+        $data['contents']=$contents;
+
+        $to_ids=$this->qanda_model->getTo_idByName($name);
+        $i=0;
+        $Acontents=array();
+        $AqIds=array();
+        foreach(array_keys($to_ids) as $id){
+            $Acontents[$i]=$this->qanda_model->getContentById($id);
+            $AqIds[$i]=$this->qanda_model->getQidByTo_id($to_ids[$id]);
+            $i=$i+1;
+
+//            array_push($Acontents,$this->qanda_model->getContentById($id));
+
+//            $Acontent[$this->qanda_model->getQidByTo_id($to_ids[$id])]=$this->qanda_model->getContentById($id);
+        }
+        $data['AqIds']=$AqIds;
+        $data['Acontents']=$Acontents;
+        $this->load->view('templates/header', $data);
+        $this->load->view('myinfo', $data);
+        $this->load->view('templates/footer', $data);
+    }
+    public function search(){
+        $status=$this->session->userdata('status');
+        $name=$this->session->userdata('name');
+        if ( ! file_exists(APPPATH.'/views/search.php'))
+        {
+            // 页面不存在
+            show_404();
+        }
+        $data['status']=$status;
+        $data['name']=$name;
+
+        $key=$_POST['search'];
+
+        $this->load->model('user_model');
+        $dates=array();
+        $credits=array();
+        $names=array();
+        $user_ids=$this->user_model->searchUsers($key);
+        foreach($user_ids as $id){
+            $dates[$id]=$this->user_model->getDateById($id);
+            $credits[$id]=$this->user_model->getCreditById($id);
+            $names[$id]=$this->user_model->getNameById($id);
+        }
+        //用户
+        $data['user_ids']=$user_ids;
+        $data['dates']=$dates;
+        $data['credits']=$credits;
+        $data['names']=$names;
+
+        //问答
+        $this->load->model('qanda_model');
+
+        $qa_ids=$this->qanda_model->searchQA($key);
+        //问题id 用来进入答案对应的问题页面
+        $qids=array();
+        //如果是问题显示title，如果是答案显示内容
+        $contents=array();
+
+        $qa_dates=array();
+        foreach($qa_ids as $id){
+            $qa_dates[$id]=$this->qanda_model->getDateById($id);
+            if($this->qanda_model->isQuestion($id)){
+                //这是问题
+                $contents[$id]=$this->qanda_model->getTitleById($id);
+            }else{
+                $contents[$id]=$this->qanda_model->getContentById($id);
+            }
+            $qids[$id]=$this->qanda_model->getQidById($id);
+        }
+        $data['qa_ids']=$qa_ids;
+        $data['qa_dates']=$qa_dates;
+        $data['qids']=$qids;
+        $data['contents']=$contents;
+
+        $this->load->model('tag_model');
+        $tags=$this->tag_model->search($key);
+        $data['tags']=$tags;
+        $this->load->model('qa_tag_model');
+        $q_count_of_tag=array();
+        foreach(array_keys($tags) as $id){
+            $q_count_of_tag[$id]=count($this->qa_tag_model->getQidsByTagid($id));
+        }
+        $data['q_count_of_tag']=$q_count_of_tag;
+        //$this->load->view('templates/header', $data);
+        $this->load->view("search", $data);
+        //$this->load->view('templates/footer', $data);
+
+
+
+
+
+    }
+}
+?>

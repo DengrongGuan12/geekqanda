@@ -1,0 +1,10 @@
+.test{
+    margin: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: #ffffff;
+    color: red;
+    font-size: 36px;
+
+
+}

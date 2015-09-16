@@ -1,0 +1,191 @@
+
+<section class="content">
+    <section class="widget" style="height: 1100px; min-height:300px">
+        <header>
+            <span class="icon">&#128196;</span>
+            <hgroup>
+                <h1>发布问题</h1>
+            </hgroup>
+        </header>
+        <div class="content">
+            <form onsubmit="return checkInputs();" action="<?php echo($address."ask_question/getData/");?>" method="post" name="form1">
+                <div class="field-wrap">
+                    <input id="title" name="title" type="text" value="标题"/>
+                    <div id="title-error" class="red" style="margin-top: 0px;">
+                        <p>标题不能为空或者标题长度太长！</p>
+                    </div>
+                </div>
+                <div class="green">
+                    <p>你可以通过复制粘贴来插入图片(可以改变大小)，像编辑word文档一样来编辑你的问题吧！</p>
+                </div>
+                <div class="field-wrap wysiwyg-wrap">
+                    <textarea value="输入具体内容" id="content" class="post" rows="5" name="content"></textarea>
+
+                </div>
+                <div id="content-error" class="red" style="margin-top: 0px;">
+                    <p>内容不能为空！</p>
+                </div>
+                <div class="tags" id="tags" style="margin-bottom: 5px;">
+                    选择所属标签:
+                    <select name="tag1" id="tag1">
+                        <?php foreach(array_keys($tags) as $id):?>
+                            <option value=<?php echo($id);?>><?php echo($tags[$id]);?></option>
+                        <?php endforeach;?>
+                    </select>
+<!--                    <ul class="tag-list">-->
+<!--                        <li class="tag1" id="cc" onclick="myCheckbox('cc',this);" onmouseover="this.className='tag2'" onmouseout="this.className='tag1'">html</li>-->
+<!---->
+<!--                    </ul>-->
+                </div>
+                <br />
+                <div style="margin-bottom: 5px; margin-left: -5px;">
+                    <a class="button add" href="javascript:addTag()">添加标签</a>
+                    <a class="button delete" href="javascript:deleteTag()">删除标签</a>
+                </div>
+
+                <br />
+                <script type="text/javascript">
+                    var count= 1 ;
+                    var maxTag = 5;
+                    function addTag(){
+                        if(count >= maxTag){
+                            alert("最多5个标签！");return;//限制最多maxfile个文件框
+                        }
+                        count++;
+                        //自增id不同的HTML对象，并附加到容器最后
+                        var newSelect="<select name=tag"+count+" id=tag"+count+">"
+                            <?php foreach(array_keys($tags) as $id):?>
+                            +"<option value=<?php echo($id);?>><?php echo($tags[$id]);?></option>"
+                            <?php endforeach;?>
+                            +"</select>";
+                        document.getElementById("tags").insertAdjacentHTML("beforeEnd", newSelect);
+                    }
+                    function deleteTag(){
+                        if(count==1){
+                            alert("最少一个标签！");
+                            return;
+                        }else{
+                            document.getElementById("tag"+count).parentNode.removeChild(document.getElementById("tag"+count));
+                            count--;
+                        }
+
+                    }
+                </script>
+                悬赏分：
+                <select name="credit" id="credit">
+                    <?php for($i=0;$i<=$credit;$i++):?>
+                        <option value=<?php echo($i);?>><?php echo($i);?></option>
+                    <?php endfor;?>
+                </select>
+                <br />
+                <br />
+
+                
+                <button class="green">提交</button>
+                <div id='submit-success' class='orange' style='margin-top: 3px;'>
+                    <p>发布成功(你可以在 管理->我发布的问题 中找到该问题)!</p>
+                </div>
+                <div id='submit-error3' class='red' style='margin-top: 3px;'>
+                    <p>发布失败(你现在所拥有的积分不够支付你的悬赏分)!</p>
+                </div>
+                <div id='submit-error1' class='red' style='margin-top: 3px;'>
+                    <p>发布失败(你一天最多只能发布2个问题)!</p>
+                </div>
+                <div id='submit-error2' class='red' style='margin-top: 3px;'>
+                    <p>发布失败(你一天最多只能发布4个问题)!</p>
+                </div>
+
+
+
+            </form>
+            <script type="text/javascript">
+                function contains(a, obj) {
+                    var i = a.length;
+                    if(i==0){
+                        return false;
+                    }
+                    while (i--) {
+                        if (a[i] === obj) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                function checkInputs(){
+                    var title=document.form1.title;
+                    var content=document.form1.content;
+                    if(title.value.length==0||title.value=="标题"||title.value.length>=128){
+                        $("#title-error").fadeIn();
+                        title.focus();
+                        return false;
+                    }else if(content.value.length==0||content.value=="<p>Initial content</p>"||content.value=="<p><br></p>"){
+                        $("#content-error").fadeIn();
+                        content.focus();
+                        return false;
+                    }else{
+                        $("#title-error").fadeOut();
+                        $("#content-error").fadeOut();
+                        var credit=document.getElementById("credit");
+                        var index=credit.selectedIndex;
+                        var credit_value=credit.options[index].value;
+                        var tags=new Array();
+                        for(var i=1;i<=5;i++){
+                            if(document.getElementById("tag"+i)){
+                                var tag=document.getElementById("tag"+i);
+                                var index=tag.selectedIndex;
+                                var tag_value=tag.options[index].value;
+                                if(!contains(tags,tag_value)){
+                                    tags.push(tag_value);
+                                }else{
+                                    continue;
+                                }
+                            }
+
+                        }
+                        var len=tags.length;
+                        var tags_str=tags[0];
+                        for(var i=1;i<len;i++){
+                            tags_str=tags_str+","+tags[i];
+                        }
+                        var url="<?php echo($address."ask_question/getData");?>";
+//                        var title = document.getElementById("title").value;
+//                        var content = editor.document.getBody().getHtml(); //取得html文本
+                        var data = {
+                            title: title.value,
+                            content: content.value,
+                            tags:tags_str,
+                            credit:credit_value
+                        };
+                        $.ajax({
+                            url: url,
+                            data: data,
+                            type: 'POST',
+                            success: function (msg) {
+                                showSubmitResult(msg);
+                                title.value="";
+                                content.value="";
+//                                alert(msg);
+                            }
+                        });
+                        return false;
+
+
+                    }
+
+                }
+                function showSubmitResult(str){
+                    var results_array=new Array("submit-success","submit-error1","submit-error2","submit-error3");
+                    $("#"+str).fadeIn();
+                    for(var i=0;i<4;i++){
+                        if(results_array[i]==str){
+                            continue;
+                        }
+                        $("#"+results_array[i]).fadeOut();
+                    }
+
+
+                }
+
+            </script>
+        </div>
+    </section>
